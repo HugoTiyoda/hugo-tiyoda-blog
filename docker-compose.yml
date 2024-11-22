@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Serviço do PostgreSQL
+  db:
+    image: postgres:14
+    container_name: blog_db
+    environment:
+      POSTGRES_DB: blog_db
+      POSTGRES_USER: blog_user
+      POSTGRES_PASSWORD: blog_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - blog_network
+
+  # Serviço da Aplicação Go
+  app:
+    build: .
+    container_name: blog_app
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: blog_user
+      DB_PASSWORD: blog_password
+      DB_NAME: blog_db
+      DB_SSLMODE: disable
+    ports:
+      - "8080:8080" 
+    networks:
+      - blog_network
+
+volumes:
+  postgres_data:
+
+networks:
+  blog_network:
+    driver: bridge
