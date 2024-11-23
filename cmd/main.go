@@ -3,7 +3,9 @@ package main
 import (
 	"blog/adapters/inbound/controller"
 	"blog/adapters/outbound/postgresql"
-	"blog/application/services"
+	"blog/application/services/author"
+	authorsession "blog/application/services/author_session"
+	services "blog/application/services/post"
 	"fmt"
 	"log"
 	"os"
@@ -15,14 +17,19 @@ import (
 
 func main() {
 	db := initDatabase()
-	log.Println("[INFO] Connected to database")
-	repo := postgresql.NewPostRepositoryImpl(db)
+	authorRepo := postgresql.NewAuthorRepositoryImpl(db)
+	authorSessionRepo := postgresql.NewAuthorSessionRepositoryImpl(db)
+	postRepo := postgresql.NewPostRepositoryImpl(db)
+
+	sessionService := authorsession.NewAuthorSessionService(authorSessionRepo)
+	authorService := author.NewAuthorService(authorRepo, sessionService)
+	postService := services.NewPostService(postRepo)
 
 	router := gin.Default()
-
 	apiV1 := router.Group("/api/v1")
-	postService := services.NewPostService(repo)
+
 	controller.NewPostController(apiV1, postService)
+	controller.NewAuthorController(apiV1, authorService)
 	router.Run(":8080")
 	defer func() {
 		if r := recover(); r != nil {
@@ -49,7 +56,7 @@ func initDatabase() *gorm.DB {
 		log.Fatalln(err)
 	}
 
-	db.AutoMigrate(&postgresql.Post{})
+	db.AutoMigrate(&postgresql.Post{}, &postgresql.Author{}, &postgresql.AuthorSession{})
 
 	return db
 }

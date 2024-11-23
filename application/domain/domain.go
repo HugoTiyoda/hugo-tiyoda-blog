@@ -12,10 +12,25 @@ type Post struct {
 }
 
 type Author struct {
-	Id    string
-	Name  string
-	Email string
-	Bio   string
+	Id           string     `json:"id"`
+	Name         string     `json:"name"`
+	Email        string     `json:"email"`
+	Bio          string     `json:"bio"`
+	PasswordHash string     `json:"-"`
+	IsActive     bool       `json:"is_active"`
+	LastLogin    *time.Time `json:"last_login"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+type AuthorSession struct {
+	Id        string    `json:"id"`
+	AuthorId  string    `json:"author_id"`
+	Token     string    `json:"token"`
+	UserAgent string    `json:"user_agent"`
+	IpAddress string    `json:"ip_address"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 type Comment struct {
