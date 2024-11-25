@@ -64,14 +64,15 @@ func NewAuthor(a *domain.Author) *Author {
 
 func (a *Author) ToDomain() *domain.Author {
 	return &domain.Author{
-		Id:    a.Id,
-		Name:  a.Name,
-		Email: a.Email,
-		Bio:   a.Bio,
-		IsActive: a.IsActive,
-		LastLogin: a.LastLogin,
-		CreatedAt: a.CreatedAt,
-		UpdatedAt: a.UpdatedAt,
+		Id:           a.Id,
+		Name:         a.Name,
+		Email:        a.Email,
+		Bio:          a.Bio,
+		PasswordHash: a.PasswordHash,
+		IsActive:     a.IsActive,
+		LastLogin:    a.LastLogin,
+		CreatedAt:    a.CreatedAt,
+		UpdatedAt:    a.UpdatedAt,
 	}
 }
 

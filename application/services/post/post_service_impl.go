@@ -22,9 +22,7 @@ func (s *PostService) FindByAuthorId(id string) ([]*domain.Post, error) {
 }
 
 func (s *PostService) Create(post *domain.Post) error {
-	if post.Id == "" {
-		post.Id = uuid.New().String()
-	}
+	post.Id = uuid.New().String()
 	post.CreatedAt = time.Now()
 	post.UpdatedAt = time.Now()
 

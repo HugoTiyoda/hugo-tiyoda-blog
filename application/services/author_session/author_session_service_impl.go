@@ -3,8 +3,11 @@ package authorsession
 import (
 	"blog/application/domain"
 	"blog/application/ports"
+	"fmt"
+	"os"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -18,13 +21,25 @@ func NewAuthorSessionService(authorSessionRepository ports.AuthorSessionReposito
 	}
 }
 
-func (service *AuthorSessionService) Create(authorId string) (*domain.AuthorSession, error) {
-	//TODO generate token JWT e user agent
+func (service *AuthorSessionService) Create(authorId, userAgent, ipAddress string) (*domain.AuthorSession, error) {
+	tokenClaims := jwt.MapClaims{
+		"sub": authorId,                                // subject (autor)
+		"iat": time.Now().Unix(),                       // issued at
+		"exp": time.Now().Add(time.Minute * 30).Unix(), // expiration
+		"sid": uuid.New().String(),                     // session id
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims)
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %v", err)
+	}
 	session := domain.AuthorSession{
 		Id:        uuid.New().String(),
 		AuthorId:  authorId,
-		Token:     "",
-		UserAgent: "",
+		Token:     tokenString,
+		UserAgent: userAgent,
+		IpAddress: ipAddress,
 		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(time.Minute * 30),
 	}

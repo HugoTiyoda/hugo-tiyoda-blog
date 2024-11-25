@@ -38,3 +38,13 @@ func (r *AuthorRepositoryImpl) ExistsByEmail(email string) (bool, error) {
 
 	return count > 0, nil
 }
+
+func (r *AuthorRepositoryImpl) FindByEmail(email string) (*domain.Author, error) {
+	var e Author
+	err := r.db.First(&e, "email = ?", email).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return e.ToDomain(), err
+}

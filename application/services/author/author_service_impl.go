@@ -5,6 +5,7 @@ import (
 	"blog/application/ports"
 	authorsession "blog/application/services/author_session"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,6 +22,40 @@ func NewAuthorService(authorRepository ports.AuthorRepository, sessionService *a
 		authorRepository: authorRepository,
 		sessionService:   sessionService,
 	}
+}
+func (service *AuthorService) Login(email, password, userAgent, ipAddress string) (*domain.AuthorLogin, error) {
+	author, err := service.authorRepository.FindByEmail(email)
+	if err != nil {
+		return nil, errors.New("invalid credentials")
+	}
+
+	if !author.IsActive {
+		return nil, errors.New("account is disabled")
+	}
+
+	if err := bcrypt.CompareHashAndPassword(
+		[]byte(author.PasswordHash),
+		[]byte(password),
+	); err != nil {
+		return nil, errors.New("invalid credentials")
+	}
+
+	session, err := service.sessionService.Create(author.Id, userAgent, ipAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	author.LastLogin = &now
+	if err := service.authorRepository.Save(author); err != nil {
+		return nil, fmt.Errorf("failed to update last login: %v", err)
+	}
+
+	return &domain.AuthorLogin{
+		Author:   *author,
+		Token:    session.Token,
+		ExpireAt: session.ExpiresAt,
+	}, nil
 }
 
 func (s *AuthorService) Register(author *domain.Author, password string) (*domain.Author, string, error) {
@@ -41,7 +76,8 @@ func (s *AuthorService) Register(author *domain.Author, password string) (*domai
 		return nil, "", err
 	}
 
-	session, err := s.sessionService.Create(author.Id)
+	//Na hora que registra já cria a sessão pra continuidade do fluxo. Ex.: pagina de login -> tela inicial
+	session, err := s.sessionService.Create(author.Id, "", "")
 	if err != nil {
 		return nil, "", err
 	}

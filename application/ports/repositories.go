@@ -6,6 +6,7 @@ type AuthorRepository interface {
 	Save(d *domain.Author) error
 	FindById(id string) (*domain.Author, error)
 	ExistsByEmail(email string) (bool, error)
+	FindByEmail(email string) (*domain.Author, error)
 }
 
 type AuthorSessionRepository interface {

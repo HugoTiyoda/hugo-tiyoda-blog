@@ -33,6 +33,12 @@ type AuthorSession struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
+type AuthorLogin struct {
+	Author   Author    `json:"author"`
+	Token    string    `json:"token"`
+	ExpireAt time.Time `json:"expire_at"`
+}
+
 type Comment struct {
 	Id        string    `json:"id"`
 	PostId    string    `json:"post_id"`
