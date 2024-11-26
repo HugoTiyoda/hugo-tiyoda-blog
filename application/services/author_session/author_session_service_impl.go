@@ -4,6 +4,7 @@ import (
 	"blog/application/domain"
 	"blog/application/ports"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -49,4 +50,42 @@ func (service *AuthorSessionService) Create(authorId, userAgent, ipAddress strin
 	}
 
 	return &session, nil
+}
+
+// AuthorSessionService
+func (service *AuthorSessionService) ValidateSession(token string) (*domain.AuthorSession, error) {
+	// Buscar sessão pelo token
+	session, err := service.authorSessionRepository.FindByToken(token)
+	if err != nil {
+		return nil, fmt.Errorf("session not found")
+	}
+
+	// Verificar se a sessão expirou
+	if time.Now().After(session.ExpiresAt) {
+		// Deletar sessão expirada
+		if err := service.authorSessionRepository.Delete(session.Id); err != nil {
+			// Loggar erro mas não retornar para o cliente
+			log.Printf("failed to delete expired session: %v", err)
+		}
+		return nil, fmt.Errorf("session expired")
+	}
+
+	// Validar JWT
+	_, err = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid token: %v", err)
+	}
+
+	return session, nil
+}
+
+// Job para limpar sessões expiradas (pode rodar em uma goroutine)
+func (service *AuthorSessionService) CleanExpiredSessions() error {
+	return service.authorSessionRepository.DeleteAllExpired()
 }

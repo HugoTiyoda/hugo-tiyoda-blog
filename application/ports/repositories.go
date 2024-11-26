@@ -11,6 +11,9 @@ type AuthorRepository interface {
 
 type AuthorSessionRepository interface {
 	Save(d *domain.AuthorSession) error
+	DeleteAllExpired() error
+	Delete(id string) error
+	FindByToken(token string) (*domain.AuthorSession, error)
 }
 
 type BlogRepository interface {

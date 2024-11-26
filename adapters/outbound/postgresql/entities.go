@@ -97,3 +97,15 @@ func NewAuthorSession(a *domain.AuthorSession) *AuthorSession {
 		ExpiresAt: a.ExpiresAt,
 	}
 }
+
+func (a *AuthorSession) ToDomain() *domain.AuthorSession {
+	return &domain.AuthorSession{
+		Id:        a.Id,
+		AuthorId:  a.AuthorId,
+		Token:     a.Token,
+		UserAgent: a.UserAgent,
+		IpAddress: a.IpAddress,
+		CreatedAt: a.CreatedAt,
+		ExpiresAt: a.ExpiresAt,
+	}
+}

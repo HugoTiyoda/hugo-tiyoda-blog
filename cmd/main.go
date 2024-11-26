@@ -8,7 +8,10 @@ import (
 	services "blog/application/services/post"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -28,8 +31,16 @@ func main() {
 	router := gin.Default()
 	apiV1 := router.Group("/api/v1")
 
-	controller.NewPostController(apiV1, postService)
+	startSessionCleaner(sessionService)
+	AuthMiddleware(sessionService)
+
 	controller.NewAuthorController(apiV1, authorService)
+	
+	protected := router.Group("/api/protected")
+	protected.Use(AuthMiddleware(sessionService))
+	{
+		controller.NewPostController(protected, postService)
+	}
 	router.Run(":8080")
 	defer func() {
 		if r := recover(); r != nil {
@@ -59,4 +70,48 @@ func initDatabase() *gorm.DB {
 	db.AutoMigrate(&postgresql.Post{}, &postgresql.Author{}, &postgresql.AuthorSession{})
 
 	return db
+}
+
+func startSessionCleaner(sessionService *authorsession.AuthorSessionService) {
+	ticker := time.NewTicker(10 * time.Minute)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if err := sessionService.CleanExpiredSessions(); err != nil {
+					log.Printf("failed to clean expired sessions: %v", err)
+				}
+			}
+		}
+	}()
+}
+
+func AuthMiddleware(sessionService *authorsession.AuthorSessionService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "no token provided"})
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+		session, err := sessionService.ValidateSession(tokenString)
+		if err != nil {
+			switch err.Error() {
+			case "session expired":
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired"})
+			case "session not found":
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+			default:
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			}
+			return
+		}
+
+		c.Set("session", session)
+		c.Set("authorId", session.AuthorId)
+
+		c.Next()
+	}
 }
