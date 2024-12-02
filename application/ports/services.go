@@ -11,3 +11,9 @@ type PostService interface {
 	Update(id, tittle, content string) error
 	FindByAuthorId(id string) ([]*domain.Post, error)
 }
+
+type SessionService interface {
+	Create(authorId, userAgent, ipAddress string) (*domain.AuthorSession, error)
+	ValidateSession(token string) (*domain.AuthorSession, error)
+	CleanExpiredSessions() error
+}
