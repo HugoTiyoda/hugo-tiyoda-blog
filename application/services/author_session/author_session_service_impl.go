@@ -52,7 +52,6 @@ func (service *AuthorSessionService) Create(authorId, userAgent, ipAddress strin
 	return &session, nil
 }
 
-// AuthorSessionService
 func (service *AuthorSessionService) ValidateSession(token string) (*domain.AuthorSession, error) {
 	// Buscar sessão pelo token
 	session, err := service.authorSessionRepository.FindByToken(token)
@@ -64,7 +63,6 @@ func (service *AuthorSessionService) ValidateSession(token string) (*domain.Auth
 	if time.Now().After(session.ExpiresAt) {
 		// Deletar sessão expirada
 		if err := service.authorSessionRepository.Delete(session.Id); err != nil {
-			// Loggar erro mas não retornar para o cliente
 			log.Printf("failed to delete expired session: %v", err)
 		}
 		return nil, fmt.Errorf("session expired")
@@ -85,7 +83,7 @@ func (service *AuthorSessionService) ValidateSession(token string) (*domain.Auth
 	return session, nil
 }
 
-// Job para limpar sessões expiradas (pode rodar em uma goroutine)
+// Job para limpar sessões expiradas 
 func (service *AuthorSessionService) CleanExpiredSessions() error {
 	return service.authorSessionRepository.DeleteAllExpired()
 }

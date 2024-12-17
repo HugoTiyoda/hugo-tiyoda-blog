@@ -40,7 +40,7 @@ func main() {
 	{
 		controller.NewPostController(protected, postService)
 	}
-	router.Run(":8080")d
+	router.Run(":8080")
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println("Recovered in f", r)
